@@ -1,4 +1,7 @@
 package edu.hitsz.item;
 
-public class FlyingItem {
+import edu.hitsz.basic.AbstractFlyingObject;
+
+public abstract class FlyingItem extends AbstractFlyingObject {
+
 }
