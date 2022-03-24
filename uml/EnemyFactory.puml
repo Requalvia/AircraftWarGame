@@ -1,0 +1,48 @@
+@startuml
+'https://plantuml.com/class-diagram
+
+AbstractAircraft <|--EnemyAircraft
+EnemyAircraft <|--MobEnemy
+EnemyAircraft <|--EliteEnemy
+EnemyAircraft <|--EnemyBoss
+abstract class EnemyAircraft{
+    - direction:int
+    + EnemyAircraft(int locationX, int locationY, int speedX, int speedY, int hp):void
+}
+class MobEnemy {
+    + MobEnemy(int locationX, int locationY, int speedX, int speedY, int hp):void
+    + forward():void
+}
+class EliteEnemy{
+    - shootNum:int
+    - power:int
+    + EliteEnemy(int locationX, int locationY, int speedX, int speedY, int hp):void
+    + shoot():List<Bullet>
+    + forward():void
+    + DropItemUponDeath():void
+}
+class EnemyBoss{
+    - shootNum:int
+    - power:int
+    + EnemyBoss(int locationX, int locationY, int speedX, int speedY, int hp):void
+    + shoot():List<Bullet>
+}
+interface Factory{
+    +Create():
+}
+Factory<|--MobEnemyFactory
+Factory<|--EliteEnemyFactory
+Factory<|--EnemyBossFactory
+MobEnemyFactory-->MobEnemy:Create
+EliteEnemyFactory-->EliteEnemy:Create
+EnemyBossFactory-->EnemyBoss:Create
+class MobEnemyFactory{
+    +Create():EnemyAircraft
+}
+class EliteEnemyFactory{
+    +Create():EnemyAircraft
+}
+class EnemyBossFactory{
+    +Create():EnemyAircraft
+}
+@enduml

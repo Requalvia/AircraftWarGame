@@ -3,6 +3,11 @@ package edu.hitsz.application;
 import edu.hitsz.aircraft.*;
 import edu.hitsz.bullet.AbstractBullet;
 import edu.hitsz.basic.AbstractFlyingObject;
+import edu.hitsz.factory.*;
+import edu.hitsz.item.BombSupply;
+import edu.hitsz.item.CureSupply;
+import edu.hitsz.item.FireSupply;
+import edu.hitsz.item.FlyingItem;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 
 import javax.swing.*;
@@ -36,6 +41,8 @@ public class Game extends JPanel {
     private final List<AbstractBullet> heroBullets;
     private final List<AbstractBullet> enemyBullets;
 
+    private final List<FlyingItem> flyingItems;
+
     private int enemyMaxNumber = 5;
 
     private boolean gameOverFlag = false;
@@ -50,16 +57,30 @@ public class Game extends JPanel {
 
     public double typeOfEnemy=0;
 
+    //enemy-factories
+    private MobEnemyFactory mobEnemyFactory;
+    private EliteEnemyFactory eliteEnemyFactory;
+    private EnemyBossFactory enemyBossFactory;
+    private BombSupplyFactory bombSupplyFactory;
+    private CureSupplyFactory cureSupplyFactory;
+    private FireSupplyFactory fireSupplyFactory;
 
     public Game() {
-        heroAircraft = new HeroAircraft(
-                Main.WINDOW_WIDTH / 2,
-                Main.WINDOW_HEIGHT - ImageManager.HERO_IMAGE.getHeight() ,
-                0, 0, 100);
+        heroAircraft = HeroAircraft.GetInstance();
 
         enemyAircrafts = new LinkedList<>();
         heroBullets = new LinkedList<>();
         enemyBullets = new LinkedList<>();
+        flyingItems=new LinkedList<>();
+
+        //初始化工厂
+        mobEnemyFactory=new MobEnemyFactory();
+        eliteEnemyFactory=new EliteEnemyFactory();
+        enemyBossFactory=new EnemyBossFactory();
+        bombSupplyFactory=new BombSupplyFactory();
+        cureSupplyFactory=new CureSupplyFactory();
+        fireSupplyFactory=new FireSupplyFactory();
+
 
         /**
          * Scheduled 线程池，用于定时任务调度
@@ -96,36 +117,24 @@ public class Game extends JPanel {
                     typeOfEnemy=(double) Math.random();
                     System.out.println(typeOfEnemy);
                     if(typeOfEnemy>=0 && typeOfEnemy<0.8){
-                        enemyAircrafts.add(new MobEnemy(
-                                (int) ( Math.random() * (Main.WINDOW_WIDTH - ImageManager.MOB_ENEMY_IMAGE.getWidth()))*1,
-                                (int) (Math.random() * Main.WINDOW_HEIGHT * 0.2)*1,
-                                0,
-                                10,
-                                30
-                        ));
+                        //TODO create enemy with factory
+                        enemyAircrafts.add((AbstractAircraft) mobEnemyFactory.Create());
                     }
-
-                    else if(typeOfEnemy>=0.8 && typeOfEnemy<1)
-                    enemyAircrafts.add(new EliteEnemy(
-                            (int) ( Math.random() * (Main.WINDOW_WIDTH - ImageManager.ELITE_ENEMY_IMAGE.getWidth()))*1,
-                            (int) (Math.random() * Main.WINDOW_HEIGHT * 0.2)*1,
-                            0,
-                            10,
-                            60
-                    ));
+                    else if(typeOfEnemy>=0.8 && typeOfEnemy<1) {
+                        //TODO create enemy with factory
+                        enemyAircrafts.add((AbstractAircraft) eliteEnemyFactory.Create());
+                    }
                 }
 
                 // 飞机射出子弹
                 shootAction();
-
-
             }
             // 子弹移动
             bulletsMoveAction();
-
             // 飞机移动
             aircraftsMoveAction();
-
+            //道具移动
+            itemsMoveAction();
             // 撞击检测
             crashCheckAction();
             // 后处理
@@ -204,6 +213,11 @@ public class Game extends JPanel {
             enemyAircraft.forward();
         }
     }
+    private void itemsMoveAction() {
+        for (FlyingItem fi : flyingItems) {
+            fi.forward();
+        }
+    }
 
 
     /**
@@ -235,7 +249,7 @@ public class Game extends JPanel {
                     // 避免多个子弹重复击毁同一敌机的判定
                     continue;
                 }
-
+                double ifItem=Math.random();
                 if (enemyAircraft.crash(bullet)) {
                     // 敌机撞击到英雄机子弹
                     // 敌机损失一定生命值
@@ -245,7 +259,22 @@ public class Game extends JPanel {
                         // TODO 获得分数，产生道具补给
                         if(enemyAircraft.getClass().toString().equals("class edu.hitsz.aircraft.EliteEnemy")){
                             score += 20;
-
+                            //精英机被摧毁时 有0.75几率产生三种道具之一
+                            if(ifItem>=0 && ifItem<0.25){
+                                flyingItems.add(cureSupplyFactory.CreateItem(
+                                        enemyAircraft.getLocationX()*1,
+                                        enemyAircraft.getLocationY()*1));
+                            }
+                            else if(ifItem>=0.25 && ifItem<0.50){
+                                flyingItems.add(fireSupplyFactory.CreateItem(
+                                        enemyAircraft.getLocationX()*1,
+                                        enemyAircraft.getLocationY()*1));
+                            }
+                            else if(ifItem>=0.50 && ifItem<0.75){
+                                flyingItems.add(bombSupplyFactory.CreateItem(
+                                        enemyAircraft.getLocationX()*1,
+                                        enemyAircraft.getLocationY()*1));
+                            }
                         }
                         else if(enemyAircraft.getClass().toString().equals("class edu.hitsz.aircraft.MobEnemy")){
                             score += 10;
@@ -264,6 +293,24 @@ public class Game extends JPanel {
         }
 
         // Todo: 我方获得道具，道具生效
+        for(FlyingItem fi:flyingItems){
+            if(fi.notValid()){continue;}
+            else{
+                if(fi.crash(heroAircraft)){
+                    if(fi.getType().equals("CureSupply")){
+                        heroAircraft.getCure(((CureSupply)fi).getCureAmount());
+                    }
+                    else if(fi.getType().equals("BombSupply")){
+                        System.out.println("BombSupply Active");
+                    }
+                    else if(fi.getType().equals("FireSupply")){
+                        System.out.println("FireSupply Active");
+                    }
+                    fi.vanish();
+                }
+            }
+
+        }
 
     }
 
@@ -279,6 +326,7 @@ public class Game extends JPanel {
         enemyBullets.removeIf(AbstractFlyingObject::notValid);
         heroBullets.removeIf(AbstractFlyingObject::notValid);
         enemyAircrafts.removeIf(AbstractFlyingObject::notValid);
+        flyingItems.removeIf(FlyingItem::notValid);
     }
 
 
@@ -304,12 +352,14 @@ public class Game extends JPanel {
             this.backGroundTop = 0;
         }
 
+        paintImageWithPositionRevised(g, flyingItems);
         // 先绘制子弹，后绘制飞机
         // 这样子弹显示在飞机的下层
         paintImageWithPositionRevised(g, enemyBullets);
         paintImageWithPositionRevised(g, heroBullets);
 
         paintImageWithPositionRevised(g, enemyAircrafts);
+
 
         g.drawImage(ImageManager.HERO_IMAGE, heroAircraft.getLocationX() - ImageManager.HERO_IMAGE.getWidth() / 2,
                 heroAircraft.getLocationY() - ImageManager.HERO_IMAGE.getHeight() / 2, null);
@@ -341,6 +391,7 @@ public class Game extends JPanel {
         y = y + 20;
         g.drawString("LIFE:" + this.heroAircraft.getHp(), x, y);
     }
+
 
 
 }

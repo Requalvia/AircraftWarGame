@@ -33,6 +33,7 @@ abstract class AbstractAircraft
     + decreaseHp(int decrease):void
     + getHp():int
     + {abstract} shoot():List<Bullet>
+
  }
 
 abstract class AbstractBullet
@@ -60,16 +61,20 @@ class HeroAircraft {
     - shootNum:int
     - power:int
     - direction:int
-    + HeroAircraft(int locationX, int locationY, int speedX, int speedY, int hp):void
+    + {static} getInstance():
+    - HeroAircraft(int locationX, int locationY, int speedX, int speedY, int hp):void
     + forward():void
     + shoot():List<Bullet>
+    + getCure(int):
 }
+
 class EnemyAircraft{
     - direction:int
-
     + EnemyAircraft(int locationX, int locationY, int speedX, int speedY, int hp):void
-
 }
+
+
+
 class MobEnemy {
     + MobEnemy(int locationX, int locationY, int speedX, int speedY, int hp):void
     + forward():void
@@ -110,7 +115,7 @@ FlyingItem <|-- CureSupply
 FlyingItem <|-- FireSupply
 FlyingItem <|-- BombSupply
 class CureSupply{
-    -curehp:int
+    -cureAmount:int
     +cure():void
 }
 class FireSupply{
