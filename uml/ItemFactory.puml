@@ -6,6 +6,9 @@ Factory<|--BombSupplyFactory
 CureSupplyFactory-->CureSupply:Create
 FireSupplyFactory-->FireSupply:Create
 BombSupplyFactory-->BombSupply:Create
+interface Factory{
+    +CreateItem():
+}
 class CureSupplyFactory{
     +Create():FlyingItem
 }

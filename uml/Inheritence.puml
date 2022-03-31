@@ -56,7 +56,7 @@ EnemyAircraft <|-- EnemyBoss
 
 AbstractBullet <|-- HeroBullet
 AbstractBullet <|-- EnemyBullet
-
+HeroAircraft <|-- HeroAircraft
 class HeroAircraft {
     - shootNum:int
     - power:int

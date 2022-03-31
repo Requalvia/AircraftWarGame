@@ -32,6 +32,11 @@ public class HeroAircraft extends AbstractAircraft {
      */
     private int shootNum = 1;
 
+    public void changeShootNum(int x){
+        this.shootNum=x;
+        return;
+    }
+
     /**
      * 子弹伤害
      */

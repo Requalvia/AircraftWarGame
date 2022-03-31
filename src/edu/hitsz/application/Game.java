@@ -1,6 +1,7 @@
 package edu.hitsz.application;
 
 import edu.hitsz.aircraft.*;
+import edu.hitsz.basic.BackUps;
 import edu.hitsz.bullet.AbstractBullet;
 import edu.hitsz.basic.AbstractFlyingObject;
 import edu.hitsz.factory.*;
@@ -117,11 +118,9 @@ public class Game extends JPanel {
                     typeOfEnemy=(double) Math.random();
                     System.out.println(typeOfEnemy);
                     if(typeOfEnemy>=0 && typeOfEnemy<0.8){
-                        //TODO create enemy with factory
                         enemyAircrafts.add((AbstractAircraft) mobEnemyFactory.Create());
                     }
                     else if(typeOfEnemy>=0.8 && typeOfEnemy<1) {
-                        //TODO create enemy with factory
                         enemyAircrafts.add((AbstractAircraft) eliteEnemyFactory.Create());
                     }
                 }
@@ -249,7 +248,7 @@ public class Game extends JPanel {
                     // 避免多个子弹重复击毁同一敌机的判定
                     continue;
                 }
-                double ifItem=Math.random();
+
                 if (enemyAircraft.crash(bullet)) {
                     // 敌机撞击到英雄机子弹
                     // 敌机损失一定生命值
@@ -258,26 +257,19 @@ public class Game extends JPanel {
                     if (enemyAircraft.notValid()) {
                         // TODO 获得分数，产生道具补给
                         if(enemyAircraft.getClass().toString().equals("class edu.hitsz.aircraft.EliteEnemy")){
-                            score += 20;
+                            score += BackUps.SCORE_ELITEENEMY;
                             //精英机被摧毁时 有0.75几率产生三种道具之一
-                            if(ifItem>=0 && ifItem<0.25){
-                                flyingItems.add(cureSupplyFactory.CreateItem(
-                                        enemyAircraft.getLocationX()*1,
-                                        enemyAircraft.getLocationY()*1));
-                            }
-                            else if(ifItem>=0.25 && ifItem<0.50){
-                                flyingItems.add(fireSupplyFactory.CreateItem(
-                                        enemyAircraft.getLocationX()*1,
-                                        enemyAircraft.getLocationY()*1));
-                            }
-                            else if(ifItem>=0.50 && ifItem<0.75){
-                                flyingItems.add(bombSupplyFactory.CreateItem(
-                                        enemyAircraft.getLocationX()*1,
-                                        enemyAircraft.getLocationY()*1));
-                            }
+                            flyingItems.addAll(EliteEnemy.generateItemUponDeath(
+                                    enemyAircraft.getLocationX()*1,
+                                    enemyAircraft.getLocationY()*1,
+                                    bombSupplyFactory,
+                                    cureSupplyFactory,
+                                    fireSupplyFactory
+                            ));
+
                         }
                         else if(enemyAircraft.getClass().toString().equals("class edu.hitsz.aircraft.MobEnemy")){
-                            score += 10;
+                            score += BackUps.SCORE_MOBENEMY;
                         }
                     }
                 }

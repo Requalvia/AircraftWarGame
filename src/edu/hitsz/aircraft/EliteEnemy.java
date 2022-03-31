@@ -4,6 +4,10 @@ import edu.hitsz.application.Main;
 import edu.hitsz.bullet.AbstractBullet;
 import edu.hitsz.bullet.EnemyBullet;
 import edu.hitsz.bullet.HeroBullet;
+import edu.hitsz.factory.BombSupplyFactory;
+import edu.hitsz.factory.CureSupplyFactory;
+import edu.hitsz.factory.FireSupplyFactory;
+import edu.hitsz.item.FlyingItem;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -55,5 +59,22 @@ public class EliteEnemy extends EnemyAircraft{
 
         return res;
     }
-
+    public static List<FlyingItem> generateItemUponDeath(int x,
+                                                      int y,
+                                                      BombSupplyFactory f1,
+                                                      CureSupplyFactory f2,
+                                                      FireSupplyFactory f3){
+        double ifItem=Math.random();
+        LinkedList<FlyingItem> l=new LinkedList<>();
+        if(ifItem>=0 && ifItem<0.25){
+            l.add(f1.CreateItem(x*1, y*1));
+        }
+        else if(ifItem>=0.25 && ifItem<0.50){
+            l.add(f2.CreateItem(x*1, y*1));
+        }
+        else if(ifItem>=0.50 && ifItem<0.75){
+            l.add(f3.CreateItem(x*1, y*1));
+        }
+        return l;
+    }
 }

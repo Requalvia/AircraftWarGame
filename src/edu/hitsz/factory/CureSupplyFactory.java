@@ -9,7 +9,6 @@ public class CureSupplyFactory implements Factory{
     public AbstractFlyingObject Create() {
         return null;
     }
-
     @Override
     public FlyingItem CreateItem(int locationX, int locationY) {
         CureSupply cureSupply=new CureSupply(locationX*1,
