@@ -5,6 +5,7 @@ import edu.hitsz.aircraft.MobEnemy;
 import edu.hitsz.application.ImageManager;
 import edu.hitsz.application.Main;
 import edu.hitsz.item.FlyingItem;
+import edu.hitsz.shootStrategies.DontShoot;
 
 public class MobEnemyFactory implements Factory{
 
@@ -15,7 +16,8 @@ public class MobEnemyFactory implements Factory{
                 (int) (Math.random() * Main.WINDOW_HEIGHT * 0.2)*1,
                 0,
                 10,
-                30);
+                30,
+                new DontShoot());
         return mobEnemy;
     }
 

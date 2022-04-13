@@ -3,6 +3,7 @@ package edu.hitsz.aircraft;
 import edu.hitsz.application.Game;
 import edu.hitsz.application.Main;
 import edu.hitsz.bullet.AbstractBullet;
+import edu.hitsz.shootStrategies.ShootStrategy;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -15,8 +16,9 @@ import java.util.List;
  */
 public class MobEnemy extends EnemyAircraft {
 
-    public MobEnemy(int locationX, int locationY, int speedX, int speedY, int hp) {
-        super(locationX, locationY, speedX, speedY, hp);
+    public MobEnemy(int locationX, int locationY, int speedX, int speedY, int hp, ShootStrategy shootStrategy) {
+        super(locationX, locationY, speedX, speedY, hp,shootStrategy);
+
     }
 
     @Override
@@ -28,9 +30,11 @@ public class MobEnemy extends EnemyAircraft {
         }
     }
 
+
     @Override
     public List<AbstractBullet> shoot() {
-        return new LinkedList<>();
+        return super.shootStrategy.shoot(this.getLocationX(),this.getLocationY(),1,
+                0,this.getSpeedY(),0,0);
     }
 
 }

@@ -1,22 +1,27 @@
 package edu.hitsz.application;
 
+import edu.hitsz.DAO.Daolmpl;
+import edu.hitsz.DAO.GameRecord;
+import edu.hitsz.DAO.RecordDao;
 import edu.hitsz.aircraft.*;
 import edu.hitsz.basic.BackUps;
 import edu.hitsz.bullet.AbstractBullet;
 import edu.hitsz.basic.AbstractFlyingObject;
 import edu.hitsz.factory.*;
-import edu.hitsz.item.BombSupply;
 import edu.hitsz.item.CureSupply;
-import edu.hitsz.item.FireSupply;
 import edu.hitsz.item.FlyingItem;
+import edu.hitsz.shootStrategies.NormalShoot;
+import edu.hitsz.shootStrategies.ShotgunShoot;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.*;
+
 
 /**
  * 游戏主面板，游戏启动
@@ -56,6 +61,18 @@ public class Game extends JPanel {
     private int cycleDuration = 600;
     private int cycleTime = 0;
 
+    //什么时间得到了火力增加道具
+    private int whenGetFireSupply=-10001;
+    private boolean ifFireUp=false;
+
+    //达到多少分 就要出现boss了
+    private int nextScoreAppearBoss=BackUps.SCORE_INTERVAL;
+    private boolean bossTime=false;
+
+    //boss的射击方式
+    private int lastTimeBossChangeSS=-1;//SS=ShootStrategy
+
+
     public double typeOfEnemy=0;
 
     //enemy-factories
@@ -65,6 +82,8 @@ public class Game extends JPanel {
     private BombSupplyFactory bombSupplyFactory;
     private CureSupplyFactory cureSupplyFactory;
     private FireSupplyFactory fireSupplyFactory;
+
+    private RecordDao dao;
 
     public Game() {
         heroAircraft = HeroAircraft.GetInstance();
@@ -94,6 +113,8 @@ public class Game extends JPanel {
         //启动英雄机鼠标监听
         new HeroController(this, heroAircraft);
 
+        dao=new Daolmpl();
+
     }
 
     /**
@@ -114,30 +135,61 @@ public class Game extends JPanel {
                 //typePfEnemy的取值范围是[0,1)，我们规定在[0,0.8)时产生普通敌机，在[0.8,1)产生精英敌机
 
 
-                if (enemyAircrafts.size() < enemyMaxNumber) {
-                    typeOfEnemy=(double) Math.random();
-                    System.out.println(typeOfEnemy);
-                    if(typeOfEnemy>=0 && typeOfEnemy<0.8){
-                        enemyAircrafts.add((AbstractAircraft) mobEnemyFactory.Create());
+                if(score >= nextScoreAppearBoss){
+                    //如果到达boss出现的分数
+                    if(enemyAircrafts.size()!=0){
                     }
-                    else if(typeOfEnemy>=0.8 && typeOfEnemy<1) {
-                        enemyAircrafts.add((AbstractAircraft) eliteEnemyFactory.Create());
+                    else if(enemyAircrafts.size()==0 && (!bossTime)){
+                        //直到屏幕上没有飞机了,且还没进入boss阶段
+                        enemyAircrafts.add(enemyBossFactory.Create());
+                        bossTime=true;
+                        lastTimeBossChangeSS=time;
+                    }
+                    else{
+                        bossTime=false;
+                        nextScoreAppearBoss+=BackUps.SCORE_INTERVAL;
+                    }
+
+                }
+                else{
+                    //如果没有到达boss出现的分数
+                    if (enemyAircrafts.size() < enemyMaxNumber) {
+                        typeOfEnemy=(double) Math.random();
+                        if(typeOfEnemy>=0 && typeOfEnemy<0.8){
+                            enemyAircrafts.add( mobEnemyFactory.Create());
+                        }
+                        else if(typeOfEnemy>=0.8 && typeOfEnemy<1) {
+                            enemyAircrafts.add(( eliteEnemyFactory.Create()));
+                        }
                     }
                 }
+
+
+
+
 
                 // 飞机射出子弹
                 shootAction();
             }
+
+            //飞机火力增加判定
+            checkFireUpTime();
+
             // 子弹移动
             bulletsMoveAction();
+
             // 飞机移动
             aircraftsMoveAction();
+
             //道具移动
             itemsMoveAction();
+
             // 撞击检测
             crashCheckAction();
+
             // 后处理
             postProcessAction();
+
             //每个时刻重绘界面
             repaint();
             // 游戏结束检查
@@ -145,6 +197,17 @@ public class Game extends JPanel {
                 // 游戏结束
                 executorService.shutdown();
                 gameOverFlag = true;
+            }
+
+            if(gameOverFlag){
+                String playerName=new String("Me");
+
+
+                SimpleDateFormat time=new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                Date date=new Date();
+                GameRecord gameRecord=new GameRecord(date,playerName,getScore(),dao.getAll().size());
+                dao.Add(gameRecord);
+                dao.printAll();
             }
 
         };
@@ -174,21 +237,47 @@ public class Game extends JPanel {
 
     public static boolean ifShoot=false;//精英敌机射击间隔为英雄机的一半 不然太难了
 
+
+
+    private void checkFireUpTime(){
+
+        if(whenGetFireSupply<=time && time<=whenGetFireSupply+ BackUps.FIRETIME){
+            //如果在火力增加时间内
+            ifFireUp=true;
+
+            if(heroAircraft.getShootStrategy() instanceof NormalShoot){
+                //如果不是散射模式 就改成散射模式
+                heroAircraft.setShootStrategy(new ShotgunShoot());
+            }
+        }
+        else{
+            //如果不在时间内 改回来
+            heroAircraft.fireDown();
+            heroAircraft.setShootStrategy(new NormalShoot());
+            ifFireUp=false;
+        }
+
+    }
+
     private void shootAction() {
         // TODO 敌机射击
         if(ifShoot){
             for(AbstractAircraft enemies:enemyAircrafts){
-                //判断如果是elite就shoot  若为mob则什么都不做
-                //【笔记】如果不分类处理的话 mob发射子弹再add到list里会闪退
-                if(enemies.getClass().toString().equals("class edu.hitsz.aircraft.EliteEnemy")){
-                    //enemies.shoot();
 
-                    //【笔记】为什么呢？因为EliteEnemy.shoot只能返回List<AbstractBullet>而非AbstractBullet
-                    //（因为AbstractAircraft.shoot的返回就是List 不能更改），而又确定精英敌机一次只能发射一个子弹
-                    //所以list里只可能有唯一一个元素 直接get(0)
-                    enemyBullets.add((AbstractBullet) enemies.shoot().get(0));
+                if(enemies.getClass().toString().equals("class edu.hitsz.aircraft.EliteEnemy")){
+
+                    enemyBullets.addAll(enemies.shoot());
                 }
                 else if(enemies.getClass().toString().equals("class edu.hitsz.aircraft.MobEnemy")){}
+                else if(enemies.getClass().toString().equals("class edu.hitsz.aircraft.EnemyBoss")){
+                    //是否改变策略？
+                    if(lastTimeBossChangeSS+BackUps.BOSS_CHANGE<=time){
+                        ((EnemyBoss)enemies).changeBSS();
+                        //System.out.println("Change!");
+                        lastTimeBossChangeSS=time;
+                    }
+                    enemyBullets.addAll(enemies.shoot());
+                }
             }
         }
         ifShoot=(!ifShoot);
@@ -227,6 +316,7 @@ public class Game extends JPanel {
      */
     private void crashCheckAction() {
         // TODO 敌机子弹攻击英雄
+
         for(AbstractBullet bullet : enemyBullets){
             if (bullet.notValid()) {continue;}
             if(heroAircraft.crash(bullet)){
@@ -238,6 +328,7 @@ public class Game extends JPanel {
 
         // 英雄子弹攻击敌机
         for (AbstractBullet bullet : heroBullets) {
+            
             if (bullet.notValid()) {
                 continue;
             }
@@ -248,7 +339,6 @@ public class Game extends JPanel {
                     // 避免多个子弹重复击毁同一敌机的判定
                     continue;
                 }
-
                 if (enemyAircraft.crash(bullet)) {
                     // 敌机撞击到英雄机子弹
                     // 敌机损失一定生命值
@@ -264,12 +354,13 @@ public class Game extends JPanel {
                                     enemyAircraft.getLocationY()*1,
                                     bombSupplyFactory,
                                     cureSupplyFactory,
-                                    fireSupplyFactory
-                            ));
-
+                                    fireSupplyFactory));
                         }
                         else if(enemyAircraft.getClass().toString().equals("class edu.hitsz.aircraft.MobEnemy")){
                             score += BackUps.SCORE_MOBENEMY;
+                        }
+                        else if(enemyAircraft.getClass().toString().equals("class edu.hitsz.aircraft.EnemyBoss")){
+                            score += BackUps.SCORE_BOSS;
                         }
                     }
                 }
@@ -283,11 +374,12 @@ public class Game extends JPanel {
             }
 
         }
-
         // Todo: 我方获得道具，道具生效
         for(FlyingItem fi:flyingItems){
+
             if(fi.notValid()){continue;}
             else{
+
                 if(fi.crash(heroAircraft)){
                     if(fi.getType().equals("CureSupply")){
                         heroAircraft.getCure(((CureSupply)fi).getCureAmount());
@@ -296,11 +388,14 @@ public class Game extends JPanel {
                         System.out.println("BombSupply Active");
                     }
                     else if(fi.getType().equals("FireSupply")){
-                        System.out.println("FireSupply Active");
+                        whenGetFireSupply=time;
+                        System.out.println("FireSupply Active"+whenGetFireSupply);
+                        heroAircraft.fireUp(1);
                     }
                     fi.vanish();
                 }
             }
+
 
         }
 
@@ -384,6 +479,10 @@ public class Game extends JPanel {
         g.drawString("LIFE:" + this.heroAircraft.getHp(), x, y);
     }
 
-
-
+    public boolean isGameOverFlag() {
+        return gameOverFlag;
+    }
+    public int getScore(){
+        return score;
+    }
 }

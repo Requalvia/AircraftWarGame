@@ -8,15 +8,22 @@ import edu.hitsz.factory.BombSupplyFactory;
 import edu.hitsz.factory.CureSupplyFactory;
 import edu.hitsz.factory.FireSupplyFactory;
 import edu.hitsz.item.FlyingItem;
+import edu.hitsz.shootStrategies.ShootStrategy;
 
 import java.util.LinkedList;
 import java.util.List;
 
 public class EliteEnemy extends EnemyAircraft{
-    public EliteEnemy(int locationX, int locationY, int speedX, int speedY, int hp) {
-        super(locationX, locationY, speedX, speedY, hp);
+    public EliteEnemy(int locationX, int locationY, int speedX, int speedY, int hp, ShootStrategy shootStrategy) {
+        super(locationX, locationY, speedX, speedY, hp,shootStrategy);
     }
     /**攻击方式 */
+    private ShootStrategy shootStrategy;
+
+    @Override
+    public void setShootStrategy(ShootStrategy shootStrategy){
+        this.shootStrategy=shootStrategy;
+    }
 
     /**
      * 子弹一次发射数量
@@ -48,16 +55,8 @@ public class EliteEnemy extends EnemyAircraft{
      * @return 射击出的子弹List
      */
     public List<AbstractBullet> shoot() {
-        List<AbstractBullet> res = new LinkedList<>();
-        int x = this.getLocationX();
-        int y = this.getLocationY() + direction*2;
-        int speedX = 0;
-        int speedY = this.getSpeedY() + direction*5;
-        AbstractBullet abstractBullet;
-        abstractBullet = new EnemyBullet( x , y, speedX, speedY, power);
-        res.add(abstractBullet);
-
-        return res;
+        return super.shootStrategy.shoot(this.getLocationX(),this.getLocationY(),this.direction,
+                0,this.getSpeedY(),this.power,this.shootNum);
     }
     public static List<FlyingItem> generateItemUponDeath(int x,
                                                       int y,

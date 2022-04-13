@@ -5,6 +5,7 @@ import edu.hitsz.aircraft.EnemyAircraft;
 import edu.hitsz.application.ImageManager;
 import edu.hitsz.application.Main;
 import edu.hitsz.item.FlyingItem;
+import edu.hitsz.shootStrategies.NormalShoot;
 
 public class EliteEnemyFactory implements Factory{
     @Override
@@ -14,7 +15,8 @@ public class EliteEnemyFactory implements Factory{
                 (int) (Math.random() * Main.WINDOW_HEIGHT * 0.2)*1,
                 (int)directionx*1,
                 10,
-                60);
+                60,
+                new NormalShoot());
         return eliteEnemy;
     }
     @Override

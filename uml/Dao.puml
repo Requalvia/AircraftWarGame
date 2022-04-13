@@ -1,0 +1,31 @@
+@startuml
+'https://plantuml.com/class-diagram
+
+interface RecordDao
+class Daolmpl
+class Record
+interface RecordDao{
+    -findById(int recordId):
+    getAll():List<Record>
+    Add(Record r):
+    Delete(int id):
+}
+class Record{
+    +private Date date;
+    +private String player;
+    +private int score;
+    +private int id;
+}
+class Daolmpl{
+    -findById(int recordId):
+    getAll():List<Record>
+    Add(Record r):
+    Delete(int id):
+}
+class Game{
+
+}
+Daolmpl --|> RecordDao
+Daolmpl --> Record
+Game ..>RecordDao
+@enduml

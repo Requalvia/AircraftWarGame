@@ -2,6 +2,7 @@ package edu.hitsz.aircraft;
 
 import edu.hitsz.bullet.AbstractBullet;
 import edu.hitsz.basic.AbstractFlyingObject;
+import edu.hitsz.shootStrategies.ShootStrategy;
 
 import java.util.List;
 
@@ -17,11 +18,20 @@ public abstract class AbstractAircraft extends AbstractFlyingObject {
      */
     protected int maxHp;
     protected int hp;
+    public ShootStrategy shootStrategy;
 
-    public AbstractAircraft(int locationX, int locationY, int speedX, int speedY, int hp) {
+    public AbstractAircraft(int locationX, int locationY, int speedX, int speedY, int hp
+        ,ShootStrategy shootStrategy) {
         super(locationX, locationY, speedX, speedY);
         this.hp = hp;
         this.maxHp = hp;
+        this.shootStrategy=shootStrategy;
+    }
+    public void setShootStrategy(ShootStrategy shootStrategy){
+        this.shootStrategy=shootStrategy;
+    }
+    public ShootStrategy getShootStrategy(){
+        return shootStrategy;
     }
 
     public void decreaseHp(int decrease){
